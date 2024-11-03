@@ -83,7 +83,7 @@ fun TextInputView(list: MutableList<Task>) {
             list.add(Task(title = text))
             text = ""
         }) {
-            Text("Add")
+            Text("Abb")
         }
     }
 }
