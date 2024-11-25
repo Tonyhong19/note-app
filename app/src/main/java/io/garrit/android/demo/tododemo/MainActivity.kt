@@ -14,6 +14,9 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.tooling.preview.Preview
 import io.garrit.android.demo.tododemo.ui.theme.TodoDemoTheme
 import java.util.UUID
+import androidx.navigation.compose.NavHost
+import androidx.navigation.compose.composable
+import androidx.navigation.compose.rememberNavController
 
 data class Note(
     val id: String = UUID.randomUUID().toString(),
@@ -27,13 +30,32 @@ class MainActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
         setContent {
             val notes = remember { mutableStateListOf<Note>() }
+            val navController = rememberNavController()
 
             TodoDemoTheme {
                 Surface(
                     modifier = Modifier.fillMaxSize(),
                     color = MaterialTheme.colorScheme.background
                 ) {
-                    MainScreen(notes = notes)
+                    NavHost(navController = navController, startDestination = "main") {
+                        composable("main") {
+                            MainScreen(
+                                notes = notes,
+                                onEditNote = { note ->
+                                    navController.navigate("edit/${note.id}")
+                                }
+                            )
+                        }
+                        composable("edit/{noteId}") { backStackEntry ->
+                            val noteId = backStackEntry.arguments?.getString("noteId")
+                            val noteToEdit = notes.find { it.id == noteId }
+                            if (noteToEdit != null) {
+                                EditNoteScreen(note = noteToEdit, onSave = {
+                                    navController.popBackStack()
+                                })
+                            }
+                        }
+                    }
                 }
             }
         }
@@ -41,17 +63,17 @@ class MainActivity : ComponentActivity() {
 }
 
 @Composable
-fun MainScreen(notes: MutableList<Note>, modifier: Modifier = Modifier) {
+fun MainScreen(notes: MutableList<Note>, onEditNote: (Note) -> Unit, modifier: Modifier = Modifier) {
     Column(
         modifier = modifier.fillMaxSize()
     ) {
-        NoteInputView(notes = notes)
-        NoteListView(notes = notes)
+        NoteInputView(notes = notes, onEditNote = onEditNote)
+        NoteListView(notes = notes, onEditNote = onEditNote)
     }
 }
 
 @Composable
-fun NoteInputView(notes: MutableList<Note>) {
+fun NoteInputView(notes: MutableList<Note>, onEditNote: (Note) -> Unit) {
     var title by rememberSaveable { mutableStateOf("") }
     var text by rememberSaveable { mutableStateOf("") }
     var errorMessage by remember { mutableStateOf("") }
@@ -95,16 +117,16 @@ fun validateNoteInput(title: String, text: String): String {
 }
 
 @Composable
-fun NoteListView(notes: List<Note>) {
+fun NoteListView(notes: MutableList<Note>, onEditNote: (Note) -> Unit) {
     LazyColumn {
         items(notes) { note ->
-            NoteRowView(note)
+            NoteRowView(note, onEditNote = onEditNote, onDeleteNote = { notes.remove(note) })
         }
     }
 }
 
 @Composable
-fun NoteRowView(note: Note) {
+fun NoteRowView(note: Note, onEditNote: (Note) -> Unit, onDeleteNote: () -> Unit) {
     Row(
         modifier = Modifier.fillMaxWidth(),
         verticalAlignment = Alignment.CenterVertically
@@ -114,10 +136,10 @@ fun NoteRowView(note: Note) {
             onCheckedChange = { note.isChecked.value = !note.isChecked.value }
         )
         Text(note.title)
-        Button(onClick = {  }) {
+        Button(onClick = { onEditNote(note) }) {
             Text("Edit")
         }
-        Button(onClick = { }) {
+        Button(onClick = { onDeleteNote() }) {
             Text("Delete")
         }
     }
@@ -127,6 +149,32 @@ fun NoteRowView(note: Note) {
 @Composable
 fun NoteRowViewPreview() {
     TodoDemoTheme {
-        NoteRowView(Note(title = "Sample Note", text = "This is a sample note."))
+        NoteRowView(Note(title = "Sample Note", text = "This is a sample note."), onEditNote = {}, onDeleteNote = {})
+    }
+}
+
+@Composable
+fun EditNoteScreen(note: Note, onSave: () -> Unit) {
+    var title by rememberSaveable { mutableStateOf(note.title) }
+    var text by rememberSaveable { mutableStateOf(note.text) }
+
+    Column {
+        OutlinedTextField(
+            value = title,
+            onValueChange = { title = it },
+            label = { Text("Title") }
+        )
+        OutlinedTextField(
+            value = text,
+            onValueChange = { text = it },
+            label = { Text("Text") }
+        )
+        Button(onClick = {
+            note.title = title
+            note.text = text
+            onSave()
+        }) {
+            Text("Save")
+        }
     }
 }
