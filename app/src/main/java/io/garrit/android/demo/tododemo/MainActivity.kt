@@ -3,6 +3,7 @@ package io.garrit.android.demo.tododemo
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -13,7 +14,10 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.AnnotatedString
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
+import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import io.garrit.android.demo.tododemo.ui.theme.TodoDemoTheme
 import java.util.UUID
 import androidx.navigation.compose.NavHost
@@ -130,16 +134,24 @@ fun NoteListView(notes: MutableList<Note>, onEditNote: (Note) -> Unit) {
 @Composable
 fun NoteRowView(note: Note, onEditNote: (Note) -> Unit, onDeleteNote: () -> Unit) {
     Row(
-        modifier = Modifier.fillMaxWidth(),
+        modifier = Modifier
+            .fillMaxWidth()
+            .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.1f))
+            .padding(8.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
         ClickableText(
             text = AnnotatedString(note.title),
-            onClick = {
-                onEditNote(note)
-            }
+            onClick = { onEditNote(note) },
+            modifier = Modifier.weight(1f),
+            style = MaterialTheme.typography.bodyLarge.copy(fontSize = 20.sp),
+            maxLines = 1,
+            overflow = TextOverflow.Ellipsis
         )
-        Button(onClick = { onDeleteNote() }) {
+        Button(
+            onClick = { onDeleteNote() },
+            modifier = Modifier.padding(start = 8.dp)
+        ) {
             Text("Delete")
         }
     }
